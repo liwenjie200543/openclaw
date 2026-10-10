@@ -289,20 +289,16 @@ describe("worker placement cancellation and reclaim authority", () => {
 
   it("stops failed-placement teardown when authority closes after tunnel cleanup", async () => {
     let authorized = true;
-    let revokeAfterStop = false;
     const harness = createTestHarness({
       failAt: "activation",
       destroyFailureCount: 1,
-      afterStopTunnel: () => {
-        if (revokeAfterStop) {
-          authorized = false;
-        }
-      },
     });
     await expect(harness.service.dispatch(REQUEST)).rejects.toThrow("activation failed");
     expect(harness.placements.current()).toMatchObject({ state: "failed" });
 
-    revokeAfterStop = true;
+    vi.mocked(harness.environments.stopTunnel).mockImplementationOnce(async () => {
+      authorized = false;
+    });
     await expect(
       harness.service.reclaim(REQUEST, () => {
         if (!authorized) {
