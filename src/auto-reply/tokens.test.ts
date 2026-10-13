@@ -177,12 +177,20 @@ describe("isSilentReplyPayloadText", () => {
     ).toBe(false);
   });
 
-  it("suppresses a reasoning body that declares the token mid-text and closes with it (#165025)", () => {
+  it("keeps reasoning bodies that mention the token mid-text and close with it", () => {
+    // Mixed reasoning + prose bodies stay deliverable: a standalone in-body
+    // mention of the token is never treated as a silence decision, matching
+    // the answer-preservation contract (#165025 untagged path: #138662).
     expect(
       isSilentReplyPayloadText(
         "think\nThe runtime context confirms another continuation event -- same inbound (msg 24682), and my reply already went out successfully (msg 24683).\n\nThe correct move: NO_REPLY. The user already has my response. Adding more text would be noise.\n\nNO_REPLY.",
       ),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      isSilentReplyPayloadText(
+        "analysis\nMeeting moved to 3 pm. The NO_REPLY token is a control marker.\nNO_REPLY",
+      ),
+    ).toBe(false);
   });
 
   it("suppresses reasoning text with a punctuation-attached trailing token", () => {

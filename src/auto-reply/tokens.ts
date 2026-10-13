@@ -135,13 +135,6 @@ const substantiveAnswerCueRe =
 const bareReasoningPlaceholderRe =
   /^\s*(?:(?:internal|private)\s+)?(?:reasoning|thinking|thoughts?|analysis)(?:\s+notes?)?\s*$/i;
 
-// A standalone mention of the token inside the reasoning body itself (for
-// example `The correct move: NO_REPLY.`) is a deliberate silent decision,
-// not prose that happens to contain the token (#165025).
-const getSilentBodyMentionRegex = createTokenRegex(
-  (escaped) => new RegExp(`(?:^|[\\s*.])${escaped}(?=$|[\\s*.,:;!?])`, "i"),
-);
-
 function hasReasoningFinalSilentToken(
   text: string,
   token: string,
@@ -169,13 +162,7 @@ function hasReasoningFinalSilentToken(
       silentIntentTextRe.test(finalLine) &&
       previousLines &&
       !substantiveAnswerCueRe.test(previousLines),
-    ) ||
-    bareReasoningPlaceholderRe.test(withoutToken) ||
-    Boolean(
-      withoutToken &&
-      getSilentBodyMentionRegex(token).test(withoutToken) &&
-      !substantiveAnswerCueRe.test(withoutToken),
-    )
+    ) || bareReasoningPlaceholderRe.test(withoutToken)
   );
 }
 
