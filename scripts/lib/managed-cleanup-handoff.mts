@@ -132,6 +132,20 @@ function createCleanupClient(parent: Parent) {
       resolve();
     }
   });
+  if (process.versions.bun) {
+    // Bun adopts duplex descriptors through connect(), not the constructor.
+    // Use the same already-validated socket; no new endpoint is opened.
+    tail = new Promise<void>((resolve, reject) => {
+      channel.once("connect", resolve);
+      channel.once("error", reject);
+      channel.once("close", () =>
+        reject(new Error("Managed cleanup channel closed before opening")),
+      );
+    });
+    void tail.catch(fail);
+    // @ts-expect-error Bun supports connect({ fd }); Node types only describe path/port connects.
+    channel.connect({ fd: parent.fd });
+  }
   // An aborted admission may exit before its claim/release acknowledgement.
   // The terminal receipt follows those frames and certifies no remaining work.
   process.once("exit", () => {
@@ -205,13 +219,13 @@ function createCleanupClient(parent: Parent) {
       let released = false;
       const release = (joined: boolean, waitForRelease = false) => {
         if (released) {
-          return;
+          return Promise.resolve();
         }
         released = true;
         operations--;
         if (!joined) {
           markFailed();
-          return;
+          return Promise.resolve();
         }
         // Physical joining completes this operation. The ordered exchange still
         // fences later admission, without extending the command's own lifetime.
