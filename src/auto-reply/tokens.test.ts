@@ -156,9 +156,10 @@ describe("isSilentReplyPayloadText", () => {
     ).toBe(false);
   });
 
-  it("suppresses reasoning text with a punctuation-attached trailing token", () => {
-    expect(isSilentReplyPayloadText("think\ninternal reasoning\nNO_REPLY.")).toBe(true);
-    expect(isSilentReplyPayloadText("think\ninternal reasoning\nNO_REPLY!")).toBe(true);
+  it.each([".", "!", "?"])("suppresses reasoning text with trailing NO_REPLY%s", (punctuation) => {
+    expect(isSilentReplyPayloadText(`think\ninternal reasoning\nNO_REPLY${punctuation}`)).toBe(
+      true,
+    );
   });
 
   it("keeps reasoning bodies that mention the token but decide to answer", () => {
@@ -189,6 +190,7 @@ describe("custom silent tokens", () => {
     const upper = token.toUpperCase();
     for (let pass = 0; pass < 2; pass++) {
       expect(isSilentReplyText(`${upper} ${token}`, token)).toBe(true);
+      expect(isSilentReplyPayloadText(`think\ninternal reasoning\n${token}!`, token)).toBe(true);
       expect(stripSilentToken(`done ${upper}\n`, token)).toBe("done");
       expect(startsWithSilentToken(`${upper}你好`, token)).toBe(true);
       expect(stripLeadingSilentToken(`${upper}你好`, token)).toBe("你好");
